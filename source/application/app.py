@@ -1,3 +1,5 @@
+import json
+import os
 from asyncio import Event
 from asyncio import Queue
 from asyncio import QueueEmpty
@@ -94,14 +96,16 @@ class XHS:
     def __extract_video(self, container: dict, data: Namespace):
         container["下载地址"] = self.video.get_video_link(data)
 
-    async def __download_files(self, container: dict, download: bool, index, log, bar):
+    async def __download_files(self, container: dict, folder_name, workId, download: bool, index, log, bar):
         name = self.__naming_rules(container)
-        path = self.manager.folder
+        folder_name = folder_name.replace("temp/", "")
+        # path = self.manager.folder
+        path = folder_name
         if (u := container["下载地址"]) and download:
             if await self.skip_download(i := container["作品ID"]):
                 logging(log, self.prompt.exist_record(i))
             else:
-                path, result = await self.download.run(u, index, name, container["作品类型"], log, bar)
+                path, result = await self.download.run(u, index, workId, name, container["作品类型"], log, bar)
                 await self.__add_record(i, result)
         elif not u:
             logging(log, self.prompt.download_link_error, ERROR)
@@ -154,7 +158,8 @@ class XHS:
 
     async def __deal_extract(self, url: str, download: bool, index: list | tuple | None, efficient: bool, log, bar):
         logging(log, self.prompt.start_processing(url))
-        html = await self.html.request_url(url, log=log)
+
+        html = await self.html.request_url(url, True, log, verify_ssl=False)
         namespace = self.__generate_data_object(html)
         if not namespace:
             logging(log, self.prompt.get_data_failure(url), ERROR)
@@ -172,7 +177,17 @@ class XHS:
                 self.__extract_image(data, namespace)
             case _:
                 data["下载地址"] = []
-        await self.__download_files(data, download, index, log, bar)
+        # 创建名为 "A" 的文件夹
+        folder_name =  "./Download/" + data["作品ID"]
+        if not os.path.exists(folder_name):
+            os.makedirs(folder_name)
+
+        # 将数据保存为 JSON 文件
+        json_filename = os.path.join(folder_name, "data.json")
+        with open(json_filename, "w", encoding="utf-8") as json_file:
+            json.dump(data, json_file, indent=4, ensure_ascii=False)
+
+        await self.__download_files(data, folder_name, data["作品ID"], download, index, log, bar)
         logging(log, self.prompt.processing_completed(url))
         return data
 

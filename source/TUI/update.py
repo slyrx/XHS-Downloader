@@ -46,9 +46,7 @@ class Update(ModalScreen):
                 int, url.split("/")[-1].split(".", 1))
             if latest_major > VERSION_MAJOR or latest_minor > VERSION_MINOR:
                 tip = Text(
-                    f"{self.prompt.official_version_update(
-                        latest_major,
-                        latest_minor)}\n{RELEASES}",
+                    f"{self.prompt.official_version_update(latest_major,latest_minor)}\n{RELEASES}",
                     style=WARNING)
             elif latest_minor == VERSION_MINOR and VERSION_BETA:
                 tip = Text(

@@ -33,8 +33,8 @@ class Download:
         self.video_format = "mp4"
         self.image_format = manager.image_format
 
-    async def run(self, urls: list, index: list | tuple | None, name: str, type_: str, log, bar) -> tuple[Path, tuple]:
-        path = self.__generate_path(name)
+    async def run(self, urls: list, index: list | tuple | None, workId: str, name: str, type_: str, log, bar) -> tuple[Path, tuple]:
+        path = self.__generate_path(workId, name)
         match type_:
             case "视频":
                 tasks = self.__ready_download_video(urls, path, name, log)
@@ -56,8 +56,8 @@ class Download:
         result = await gather(*tasks)
         return path, result
 
-    def __generate_path(self, name: str):
-        path = self.manager.archive(self.folder, name, self.folder_mode)
+    def __generate_path(self, work_id: str, name: str):
+        path = self.manager.archive(self.folder.joinpath(work_id), name, self.folder_mode)
         path.mkdir(exist_ok=True)
         return path
 
@@ -93,7 +93,7 @@ class Download:
     @re_download
     async def __download(self, url: str, path: Path, name: str, format_: str, log, bar):
         try:
-            async with self.session.get(url, proxy=self.proxy) as response:
+            async with self.session.get(url, proxy=self.proxy, verify_ssl=False) as response: # , verify_ssl=False
                 if response.status != 200:
                     return False
                 suffix = self.__extract_type(

@@ -113,14 +113,15 @@ class Manager:
             return
         with path.joinpath(f"{name}.txt").open("a", encoding="utf-8") as f:
             time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            content = f"{
-            time.center(
-                50,
-                "=")}\n{
-            dumps(
-                data,
-                indent=4,
-                ensure_ascii=False)}\n"
+            # content = f"{
+            # time.center(
+            #     50,
+            #     "=")}\n{
+            # dumps(
+            #     data,
+            #     indent=4,
+            #     ensure_ascii=False)}\n"
+            content = f"{time.center(50, '=')}\n{dumps(data, indent=4, ensure_ascii=False)}\n"
             f.write(content)
 
     async def close(self):
