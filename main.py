@@ -1,3 +1,4 @@
+import time
 from asyncio import run
 from sys import argv
 
@@ -10,7 +11,7 @@ async def example():
     """通过代码设置参数，适合二次开发"""
     # 示例链接
     error_link = "https://github.com/JoeanAmier/XHS_Downloader"
-    demo_link = "https://www.xiaohongshu.com/explore/xxxxxxxxxx"
+    demo_link = "https://www.xiaohongshu.com/explore/64abed68000000002301d7c6"
     multiple_links = f"{demo_link} {demo_link} {demo_link}"
     # 实例对象
     work_path = "D:\\"  # 作品数据/文件保存根路径，默认值：项目根路径
@@ -46,6 +47,16 @@ async def example():
         print(await xhs.extract(demo_link, download, efficient=efficient))
         # 支持传入多个作品链接
         print(await xhs.extract(multiple_links, download, efficient=efficient))
+        # 按照文件的方式传输地址
+        file_path = '/Users/slyrx/Desktop/test_XHS.txt'
+        i = 0
+        with open(file_path, 'r') as file:
+            lines = file.readlines()
+            for line in lines:
+                if i == 100:
+                    time.sleep(30)
+                i = i+1
+                print(await xhs.extract(line, download, efficient=efficient))
 
 
 async def main():

@@ -1,3 +1,4 @@
+import re
 from asyncio import gather
 from pathlib import Path
 
@@ -83,7 +84,12 @@ class Download:
         for i, j in enumerate(urls, start=1):
             if index and i not in index:
                 continue
-            file = f"{name}_{i}"
+            # 使用正则表达式提取 / 和 ? 之间的内容
+            match = re.search(r'ci.xiaohongshu.com/(.*?)(\?)', j)
+            extracted_content = ""
+            if match:
+                extracted_content = match.group(1)
+            file = f"{name}_{extracted_content}_{i}"
             if any(path.glob(f"{file}.*")):
                 logging(log, self.prompt.skip_download(file))
                 continue
@@ -93,13 +99,31 @@ class Download:
     @re_download
     async def __download(self, url: str, path: Path, name: str, format_: str, log, bar):
         try:
-            async with self.session.get(url, proxy=self.proxy, verify_ssl=False) as response: # , verify_ssl=False
+            headers = {
+                'authority': 'www.xiaohongshu.com',
+                'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+                'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
+                'cache-control': 'max-age=0',
+                'cookie': 'webBuild=4.6.0; xsecappid=xhs-pc-web; a1=18e5591706e3i831y5ay8bg46g4o97ac9msf4y4s930000228368; webId=e0ed34ad22ff5e7f1c093861ad09562f; abRequestId%20=e0ed34ad22ff5e7f1c093861ad09562f; gid=yYd22jyWDWjWyYd22jyW86v4Kdq3Yqyv20vYMMjDk4Kk4iq8ljW0S4888JJYqKY8D08idj0q; abRequestId=e0ed34ad22ff5e7f1c093861ad09562f; web_session=040069b48c5c607eba80f201cf374bc877d5e6; websectiga=59d3ef1e60c4aa37a7df3c23467bd46d7f1da0b1918cf335ee7f2e9e52ac04cf; sec_poison_id=45b45e01-8a87-4ed8-bacc-3c7ef85f6663',
+                'sec-ch-ua': '"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"macOS"',
+                'sec-fetch-dest': 'document',
+                'sec-fetch-mode': 'navigate',
+                'sec-fetch-site': 'same-origin',
+                'sec-fetch-user': '?1',
+                'upgrade-insecure-requests': '1',
+                'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+            }
+            async with self.session.get(url, proxy=self.proxy, headers=headers, verify_ssl=False) as response: # , verify_ssl=False
                 if response.status != 200:
                     return False
                 suffix = self.__extract_type(
                     response.headers.get("Content-Type")) or format_
+                print(name)
                 temp = self.temp.joinpath(name)
                 real = path.joinpath(f"{name}.{suffix}")
+                logging(log, self.prompt.download_success(path))
                 # self.__create_progress(
                 #     bar, int(
                 #         response.headers.get(
@@ -111,9 +135,16 @@ class Download:
             self.manager.move(temp, real)
             # self.__create_progress(bar, None)
             logging(log, self.prompt.download_success(name))
+            # logging(log, real)
             return True
         except ClientError as error:
-            self.manager.delete(temp)
+            try:
+                self.manager.delete(temp)
+            except UnboundLocalError:
+                # 如果捕捉到 UnboundLocalError 错误，则执行以下逻辑
+                with open("error_logs.txt", "a") as file:
+                    file.write(f"UnboundLocalError occurred: name={name}\n")
+            # self.manager.delete(temp)
             # self.__create_progress(bar, None)
             logging(log, str(error), ERROR)
             logging(log, self.prompt.download_error(name), ERROR)

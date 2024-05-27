@@ -1,3 +1,5 @@
+import time
+
 from pyperclip import paste
 from rich.text import Text
 from textual import on
@@ -86,11 +88,12 @@ class Index(Screen):
 
     @on(Button.Pressed, "#deal")
     async def deal_button(self):
-        if self.url.value:
-            self.deal()
-        else:
-            self.tip.write(Text(self.prompt.invalid_link, style=WARNING))
-            self.tip.write(Text(">" * 50, style=GENERAL))
+        self.deal()
+        # if self.url.value:
+        #     self.deal()
+        # else:
+        #     self.tip.write(Text(self.prompt.invalid_link, style=WARNING))
+        #     self.tip.write(Text(">" * 50, style=GENERAL))
 
     @on(Button.Pressed, "#reset")
     def reset_button(self):
@@ -103,9 +106,23 @@ class Index(Screen):
     @work()
     async def deal(self):
         await self.app.push_screen("loading")
-        if any(await self.xhs.extract(self.url.value, True, log=self.tip)):
-            self.url.value = ""
-        else:
-            self.tip.write(Text(self.prompt.download_failure, style=ERROR))
+        # # 按照文件的方式传输地址
+        file_path = '/Users/slyrx/Desktop/test_XHS.txt'
+        with open(file_path, 'r') as file:
+            lines = file.readlines()
+            i = 0
+            for line in lines:
+                if i % 10 == 0:
+                    time.sleep(1)
+                i = i+1
+                if any(await self.xhs.extract(line, True, log=self.tip)): # self.url.value
+                    self.url.value = ""
+                else:
+                    self.tip.write(Text(self.prompt.download_failure, style=ERROR))
+
+        # if any(await self.xhs.extract(self.url.value, True, log=self.tip)): # self.url.value
+        #     self.url.value = ""
+        # else:
+        #     self.tip.write(Text(self.prompt.download_failure, style=ERROR))
         self.tip.write(Text(">" * 50, style=GENERAL))
         self.app.pop_screen()
